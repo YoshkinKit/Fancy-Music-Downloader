@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "fancy music downloader"
+version = "0.1.0"
+description = ""
+authors = ["YoshkinKit <nikita.zhmak8872@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+requests = "^2.32.3"
+pytubefix = "^8.10.0"
+pydub = "^0.25.1"
+mutagen = "^1.47.0"
+gspread = "^6.1.4"
+gspread-dataframe = "^4.0.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
