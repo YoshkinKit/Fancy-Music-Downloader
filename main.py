@@ -1,66 +1,44 @@
-import os
-import requests
-from pytubefix import YouTube
-from pydub import AudioSegment
+from colorama import init
 
-from mutagen.easyid3 import EasyID3
-from mutagen.id3 import ID3, APIC
+from src.config import config
+from src.utils import print_status
+from src.sheets import get_sheet_data
+from src.converter import convert_to_mp3
+from src.downloader import download_audio
+from src.metadata import add_metadata, add_cover
 
-import gspread
-from gspread_dataframe import get_as_dataframe
-from google.oauth2.service_account import Credentials
+def process_track(url: str, author: str, album: str, cover_url: str) -> None:
+    """Обрабатывает один трек.
 
-def download_and_convert(url: str, author: str, album: str, cover_url: str) -> None:
-    yt = YouTube(url)
+    Args:
+        url (str): URL видео на YouTube
+        author (str): Исполнитель
+        album (str): Название альбома
+        cover_url (str): URL обложки
+    """
     
-    video = yt.streams.filter(only_audio=True).first()
-    out_file = video.download("Music")
+    try:
+        input_file, title = download_audio(url)
+        output_file = convert_to_mp3(input_file)
+        add_metadata(output_file, title, author, album)
+        add_cover(output_file, cover_url)
+        print_status(f"Успешно обработано: {title}", "SUCCESS")
+    except Exception as e:
+        print_status(f"Ошибка при обработке {url}: {str(e)}", "ERROR")
 
-    base = os.path.splitext(out_file)[0]
-    
-    new_file = base + '.mp3'
-    audio = AudioSegment.from_file(out_file)
-    audio.export(new_file, format='mp3')
-    
-    os.remove(out_file)
+def main():
+    init()
 
-    audiofile = EasyID3(new_file)
-    audiofile['title'] = yt.title
-    audiofile['artist'] = author
-    audiofile['album'] = album
-    audiofile.save()
+    print_status("Начало работы программы", "INFO")
 
-    if str(cover_url) != '-':
-        response = requests.get(cover_url)
-        audiofile = ID3(new_file)
-        audiofile.add(APIC(
-            encoding=3,
-            mime='image/jpeg',
-            type=3,
-            data=response.content
-        ))
-        audiofile.save()
-    
-    print(f"Скачано и конвертировано: {new_file}")
+    df = get_sheet_data(config.sheet_url, config.sheet_name)
+    print_status(f"Найдено {len(df)} треков для обработки", "INFO")
 
-def process_google_sheet(sheet_url: str, sheet_name: str) -> None:
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = Credentials.from_service_account_file("credentials.json", scopes=scope)
-    client = gspread.authorize(creds)
-    
-    sheet = client.open_by_url(sheet_url)
-    worksheet = sheet.worksheet(sheet_name)
-    
-    df = get_as_dataframe(worksheet)
+    for i, row in df.iterrows():
+        print_status(f"Обработка трека {i + 1}/{len(df)}", "INFO")
+        process_track(row['URL'], row['Author'], row['Album'], row['CoverURL'])
 
-    for index, row in df.iterrows():
-        url = row['URL']
-        author = row['Author']
-        album = row['Album']
-        cover_url = row["CoverURL"]
-        download_and_convert(url, author, album, cover_url)
+    print_status("Работа программы завершена", "SUCCESS")
 
 if __name__ == "__main__":
-    sheet_url = 'https://docs.google.com/spreadsheets/d/1buhff7T8gzYbDPgQeOGI8hKC5fhenr4FC9tFRd7SYEk/edit'
-    sheet_name = 'Music'
-    process_google_sheet(sheet_url, sheet_name)
+    main()
