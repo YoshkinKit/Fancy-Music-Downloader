@@ -1,0 +1,13 @@
+[Unit]
+Description=Youtube music download
+After=network.target
+
+[Service]
+User=nikita_zhmak8872
+WorkingDirectory=/home/nikita_zhmak8872/fancy-music-downloader/src/bot
+ExecStart=/home/nikita_zhmak8872/.local/bin/poetry run python bot.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
