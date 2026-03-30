@@ -26,6 +26,7 @@ class Config:
         self.download_path = os.getenv("DOWNLOAD_PATH", "Music")
         self.credentials_path = os.getenv("CREDENTIALS_PATH", "credentials.json")
         self.bot_token = os.getenv("BOT_TOKEN")
+        self.ffmpeg_path = os.getenv("FFMPEG_PATH", "")
         allowed_raw = os.getenv("ALLOWED_USERS", "")
         self.allowed_users: list[int] = [
             int(uid.strip()) for uid in allowed_raw.split(",") if uid.strip()

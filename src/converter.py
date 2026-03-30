@@ -6,8 +6,16 @@
 import os
 
 from pydub import AudioSegment
+from pydub.utils import which
 
+from .config import config
 from .utils import print_status
+
+
+def _configure_ffmpeg():
+    if config.ffmpeg_path:
+        AudioSegment.converter = os.path.join(config.ffmpeg_path, "ffmpeg")
+        AudioSegment.ffprobe = os.path.join(config.ffmpeg_path, "ffprobe")
 
 def convert_to_mp3(input_file: str) -> str:
     """Конвертирует аудио файл в формат MP3.
@@ -19,6 +27,7 @@ def convert_to_mp3(input_file: str) -> str:
         str: Путь к сконвертированному MP3 файлу
     """
     
+    _configure_ffmpeg()
     print_status("Конвертация в MP3...", "PROCESSING")
     base = os.path.splitext(input_file)[0]
     output_file = base + '.mp3'
